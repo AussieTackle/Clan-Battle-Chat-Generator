@@ -107,7 +107,7 @@
     .fish-item { background: #f8fafc; border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
     .fish-name { font-weight: 700; font-size: 14px; color: #0f172a; }
 
-    .fish-badges { display: flex; gap: 6px; flex-wrap: nowrap; align-items: center; }
+    .fish-badges { display: flex; gap: 6px; align-items: center; }
     .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap; }
     .badge-out { background: #fef2f2; color: var(--accent-red); border: 1px solid #fecaca; }
     .badge-time { background: #fffbeb; color: var(--accent-gold); border: 1px solid #fef3c7; }
@@ -207,7 +207,7 @@
     .btn-save { background: var(--clan-accent); color: #ffffff; border: none; padding: 10px 14px; border-radius: 8px; font-weight: 700; flex: 1; cursor: pointer; }
     .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: #334155; padding: 10px 14px; border-radius: 8px; font-weight: 700; flex: 1; cursor: pointer; }
 
-    /* KHUSUS TAMPILAN HP (MAX-WIDTH: 600px): BADGES JADI 2 BARIS */
+    /* KHUSUS TAMPILAN HP (MAX-WIDTH: 600px): BADGES DITUMPUK 2 BARIS */
     @media (max-width: 600px) {
       body { padding: 12px 10px 30px; }
       .card { padding: 16px; }
@@ -224,9 +224,9 @@
       .time-icons { font-size: 14px; }
       .btn-months-pop { padding: 6px 8px; font-size: 10px; }
 
-      /* Membuat badge pada fish-item turun menjadi 2 baris rata kanan */
+      /* Mengatur fish-item dan fish-badges agar badge bertumpuk secara vertikal (satu di atas yang lain) */
       .fish-item { flex-direction: column; align-items: flex-start; gap: 8px; }
-      .fish-badges { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
+      .fish-badges { width: 100%; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
     }
   </style>
 </head>
