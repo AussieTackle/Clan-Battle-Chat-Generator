@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Aussie Tackle - Clan Battle Dashboard & Calendar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0e14;
+      --panel-bg: #151b26;
+      --panel-border: #232d3f;
+      --accent-cyan: #00f2fe;
+      --accent-gold: #ffb703;
+      --accent-red: #ff4d6d;
+      --accent-green: #00f5a0;
+      --discord-purple: #5865F2;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); padding: 20px; min-height: 100vh; }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* Top Bar Header */
+    .top-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--panel-border);
+      gap: 12px; flex-wrap: nowrap;
+    }
+    .brand-container { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+    .clan-logo { width: 42px; height: 42px; object-fit: contain; border-radius: 8px; flex-shrink: 0; }
+    .brand-text { display: flex; flex-direction: column; overflow: hidden; }
+    .app-title { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .app-subtitle { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Top Nav Action Buttons */
+    .top-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .nav-icon-btn {
+      background: var(--panel-bg); border: 1px solid var(--panel-border); color: var(--text-main);
+      padding: 8px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s ease; cursor: pointer; text-decoration: none; width: 40px; height: 40px;
+    }
+    .nav-icon-btn svg { width: 20px; height: 20px; fill: var(--text-main); transition: fill 0.2s; }
+    .nav-icon-btn:hover { border-color: var(--accent-cyan); background: rgba(0, 242, 254, 0.1); }
+    .nav-icon-btn:hover svg { fill: var(--accent-cyan); }
+    .nav-icon-btn.active { border-color: var(--accent-cyan); background: rgba(0, 242, 254, 0.18); box-shadow: 0 0 10px rgba(0, 242, 254, 0.3); }
+    .nav-icon-btn.active svg { fill: var(--accent-cyan); }
+
+    /* Section Title */
+    .section-header { text-align: center; font-size: 13px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
+
+    /* Selection Grids */
+    .map-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 24px; }
+    .variation-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+
+    .select-btn {
+      background: var(--panel-bg); border: 1px solid var(--panel-border); color: var(--text-main);
+      padding: 12px 14px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer;
+      text-align: center; transition: all 0.2s ease;
+    }
+    .select-btn:hover { border-color: var(--accent-cyan); background: rgba(0, 242, 254, 0.05); }
+    .select-btn.active {
+      background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(79, 172, 254, 0.2));
+      border-color: var(--accent-cyan); color: var(--accent-cyan); box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+    }
+    .variation-btn { min-width: 100px; }
+    .variation-btn.active { background: var(--accent-gold); color: #000; border-color: var(--accent-gold); box-shadow: 0 0 12px rgba(255, 183, 3, 0.3); }
+
+    /* Target Fish Pills Container */
+    .variation-fish-box {
+      background: rgba(0,0,0,0.3); border: 1px dashed var(--panel-border); border-radius: 12px;
+      padding: 12px 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .variation-fish-label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--accent-gold); letter-spacing: 0.5px; }
+    .fish-pill { background: var(--panel-bg); border: 1px solid var(--panel-border); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--text-main); }
+
+    /* Stacked Cards Layout */
+    .stacked-cards { display: flex; flex-direction: column; gap: 24px; }
+    .card { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .card-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); }
+
+    /* Fish List */
+    .fish-list { display: flex; flex-direction: column; gap: 10px; }
+    .fish-item { background: rgba(0, 0, 0, 0.25); border: 1px solid var(--panel-border); padding: 12px 14px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .fish-name { font-weight: 700; font-size: 14px; }
+
+    .fish-badges { display: flex; gap: 6px; }
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .badge-out { background: rgba(255, 77, 109, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
+    .badge-time { background: rgba(255, 183, 3, 0.15); color: var(--accent-gold); border: 1px solid var(--accent-gold); }
+    .badge-all { background: rgba(0, 245, 160, 0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
+
+    /* RARITY BADGE COLORS */
+    .badge-rarity-common { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid #94a3b8; }
+    .badge-rarity-rare { background: rgba(255, 183, 3, 0.15); color: #ffb703; border: 1px solid #ffb703; }
+    .badge-rarity-epic { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #c084fc; }
+
+    /* Status Badges */
+    .badge-season-in {
+      background: rgba(0, 245, 160, 0.15); color: var(--accent-green); border: 1px solid var(--accent-green);
+      box-shadow: 0 0 8px rgba(0, 245, 160, 0.25); white-space: nowrap;
+    }
+    .badge-season-out {
+      background: rgba(255, 77, 109, 0.15); color: var(--accent-red); border: 1px solid var(--accent-red);
+      box-shadow: 0 0 8px rgba(255, 77, 109, 0.25); white-space: nowrap;
+    }
+
+    /* Discord Text Display */
+    .discord-box { background: #0e121b; border: 1px solid #283448; border-radius: 12px; padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #e2e8f0; white-space: pre-wrap; word-break: break-word; min-height: 120px; line-height: 1.6; margin-bottom: 16px; }
+    .copy-btn { width: 100%; background: linear-gradient(135deg, var(--discord-purple), #404eed); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; box-shadow: 0 4px 16px rgba(88, 101, 242, 0.4); }
+
+    /* Calendar Table Layout */
+    .calendar-table-container { overflow-x: auto; margin-top: 4px; }
+    .cal-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .cal-table td { padding: 12px 8px; border-bottom: 1px solid var(--panel-border); vertical-align: middle; }
+    .cal-table tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+    .cal-cell-primary { display: flex; flex-direction: column; gap: 4px; }
+    .cal-fish-name { font-weight: 700; font-size: 14px; color: var(--text-main); }
+    .cal-cell-status { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+    .time-icons { font-size: 15px; letter-spacing: 1px; }
+
+    .btn-months-pop {
+      background: rgba(0, 242, 254, 0.1); border: 1px solid var(--accent-cyan); color: var(--accent-cyan);
+      padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-months-pop:hover { background: var(--accent-cyan); color: #000; box-shadow: 0 0 10px rgba(0, 242, 254, 0.4); }
+
+    .loading, .empty-state { text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px; }
+
+    /* POP-UP MODAL (EDIT TIME & MONTHS) */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center;
+      z-index: 1000; backdrop-filter: blur(4px);
+    }
+    .modal-card {
+      background: var(--panel-bg); border: 1px solid var(--panel-border);
+      border-radius: 16px; padding: 20px; width: 92%; max-width: 480px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.6); position: relative;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .modal-title { font-size: 15px; font-weight: 800; color: var(--accent-gold); }
+
+    .modal-section-label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 8px; }
+
+    /* Active Time Chips Grid (Matching Month Chips Style) */
+    .time-chips-grid { display: flex; gap: 10px; margin-bottom: 16px; }
+    .time-chip {
+      flex: 1; padding: 10px 12px; border-radius: 10px; text-align: center;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-size: 12px; font-weight: 700; transition: all 0.2s ease; user-select: none; border: 1px solid transparent;
+    }
+    .time-chip.active {
+      background: rgba(0, 242, 254, 0.15); border-color: var(--accent-cyan); color: var(--accent-cyan);
+      box-shadow: 0 0 8px rgba(0, 242, 254, 0.25);
+    }
+    .time-chip.inactive {
+      background: #0e121b; border-color: var(--panel-border); color: #475569;
+    }
+    .time-chip.editable { cursor: pointer; }
+    .time-chip.editable:hover { border-color: var(--accent-gold); }
+
+    /* Active Months Grid */
+    .months-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 8px 0 16px 0; }
+    .month-chip {
+      padding: 8px 2px; border-radius: 8px; text-align: center; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 700;
+      transition: all 0.2s ease; user-select: none; border: 1px solid transparent;
+    }
+    .month-chip.active {
+      background: rgba(0, 242, 254, 0.15); border-color: var(--accent-cyan); color: var(--accent-cyan);
+      box-shadow: 0 0 8px rgba(0, 242, 254, 0.25);
+    }
+    .month-chip.inactive {
+      background: #0e121b; border-color: var(--panel-border); color: #475569;
+    }
+    .month-chip.editable { cursor: pointer; }
+    .month-chip.editable:hover { border-color: var(--accent-gold); }
+
+    .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .btn-save { background: var(--accent-green); color: #000; border: none; padding: 10px 14px; border-radius: 8px; font-weight: 700; flex: 1; cursor: pointer; }
+    .btn-cancel { background: transparent; border: 1px solid var(--panel-border); color: #fff; padding: 10px 14px; border-radius: 8px; font-weight: 700; flex: 1; cursor: pointer; }
+
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .card { padding: 16px; }
+      .brand-container { gap: 8px; }
+      .clan-logo { width: 36px; height: 36px; }
+      .app-title { font-size: 15px; }
+      .app-subtitle { font-size: 10px; }
+      .top-actions { gap: 6px; }
+      .nav-icon-btn { width: 36px; height: 36px; padding: 6px; }
+      .nav-icon-btn svg { width: 18px; height: 18px; }
+      .map-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .select-btn { padding: 10px 8px; font-size: 12px; }
+      .cal-table td { padding: 10px 4px; }
+      .cal-fish-name { font-size: 13px; }
+      .time-icons { font-size: 14px; }
+      .btn-months-pop { padding: 6px 8px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- TOP BAR HEADER -->
+    <div class="top-bar">
+      <div class="brand-container">
+        <img src="https://lh3.googleusercontent.com/d/1ONWzGRxb6v-8IxjjtzefbWFbxqcqEz-3" alt="Clan Logo" class="clan-logo" onerror="this.style.display='none'">
+        <div class="brand-text">
+          <span class="app-title">AUSSIE TACKLE</span>
+          <span class="app-subtitle">Clan Battle Announcement Generator</span>
+        </div>
+      </div>
+      
+      <!-- TOP NAV ACTION BUTTONS -->
+      <div class="top-actions">
+        <button class="nav-icon-btn active" id="btnDashboardView" title="Announcement Generator / Tracker" onclick="toggleView('dashboard')">
+          <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </button>
+        <button class="nav-icon-btn" id="btnCalendarView" title="Calendar View" onclick="toggleView('calendar')">
+          <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+        </button>
+        <a href="https://docs.google.com/spreadsheets/d/1H_7CRqQqtAQECTsvCztcZho8kDIRgtV-qRM4J2Uoj4I/edit?gid=1773058016#gid=1773058016" target="_blank" class="nav-icon-btn" title="Edit Google Sheet">
+          <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- VIEW 1: DASHBOARD / TRACKER PAGE -->
+    <div id="viewDashboard">
+      <div class="section-header">SELECT MAP LOCATION</div>
+      <div class="map-grid" id="mapGrid">
+        <div class="loading">Loading Maps from Master Data...</div>
+      </div>
+
+      <div class="section-header">SELECT BATTLE VARIATION</div>
+      <div class="variation-grid" id="variationGrid">
+        <div class="empty-state">Select a Map location first</div>
+      </div>
+
+      <div class="variation-fish-box" id="variationFishBox" style="display: none;">
+        <span class="variation-fish-label">Target Fish:</span>
+        <div id="variationFishPills" style="display: flex; gap: 6px; flex-wrap: wrap;"></div>
+      </div>
+
+      <div class="stacked-cards">
+        <div class="card">
+          <div class="card-title">
+            <span>Notable Targets</span>
+            <span id="fishCountBadge" class="badge badge-out">0 TARGETS</span>
+          </div>
+          <div class="fish-list" id="fishList">
+            <div class="empty-state">Select Map & Variation to view targets.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Discord Format Announcement</span>
+          </div>
+          <div class="discord-box" id="discordText">Select a map location to generate announcement...</div>
+          <button class="copy-btn" id="copyBtn" onclick="copyDiscordAnnouncement()">
+            <span>📋</span> Copy Format
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: CALENDAR PAGE -->
+    <div id="viewCalendar" style="display: none;">
+      <div class="section-header">SELECT CALENDAR LOCATION</div>
+      <div class="map-grid" id="calendarMapGrid">
+        <div class="loading">Loading Locations...</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Fish Calendar List</span>
+        </div>
+        <div class="calendar-table-container">
+          <table class="cal-table">
+            <tbody id="calendarTableBody">
+              <tr><td class="empty-state">Select a location to view calendar data.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- POP-UP MODAL: EDIT ACTIVE TIME & ACTIVE MONTHS -->
+  <div class="modal-overlay" id="monthsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" id="monthsModalTitle">Edit - Fish Name</div>
+        <button class="nav-icon-btn" id="btnToggleMonthEdit" onclick="enableMonthEditing()" title="Edit Time & Months">
+          <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        </button>
+      </div>
+
+      <!-- ACTIVE TIME CHIPS -->
+      <div class="modal-section-label">Active Time</div>
+      <div class="time-chips-grid" id="timeChipsGrid">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- ACTIVE MONTHS GRID -->
+      <div class="modal-section-label">Active Months</div>
+      <div class="months-grid" id="monthsGrid">
+        <!-- 12 Month Chips rendered dynamically -->
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('monthsModal')">Close</button>
+        <button class="btn-save" id="saveMonthsBtn" style="display: none;" onclick="saveMonthsEdit()">Save to Sheet</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    let masterFishData = [];
+    let calendarData = [];
+
+    let currentMap = '';
+    let currentVariation = '';
+    let currentCalendarLocation = '';
+
+    let activeView = 'dashboard'; 
+    let selectedCalendarFishObject = null;
+    let tempMonthStates = [];
+    let tempDayState = true;
+    let tempNightState = true;
+    let isEditingMonths = false;
+
+    window.onload = function() {
+      fetchData();
+    };
+
+    function fetchData() {
+      google.script.run
+        .withSuccessHandler(initData)
+        .withFailureHandler(err => alert("Data Load Error: " + err.message))
+        .getInitialData();
+    }
+
+    function initData(res) {
+      if (res.error) {
+        alert("Error: " + res.message);
+        return;
+      }
+      masterFishData = res.masterData || [];
+      calendarData = res.calendarData || [];
+
+      initDashboardUI();
+      initCalendarUI();
+    }
+
+    /* VIEW SWITCHER */
+    function toggleView(view) {
+      activeView = view;
+      const btnDash = document.getElementById('btnDashboardView');
+      const btnCal = document.getElementById('btnCalendarView');
+
+      if (view === 'calendar') {
+        document.getElementById('viewDashboard').style.display = 'none';
+        document.getElementById('viewCalendar').style.display = 'block';
+        btnCal.classList.add('active');
+        btnDash.classList.remove('active');
+      } else {
+        document.getElementById('viewDashboard').style.display = 'block';
+        document.getElementById('viewCalendar').style.display = 'none';
+        btnDash.classList.add('active');
+        btnCal.classList.remove('active');
+      }
+    }
+
+    /* Enrich masterFishData with realtime activeTime, status, and maxPts from calendarData */
+    function getEnrichedMasterData() {
+      return masterFishData.map(item => {
+        const calMatch = calendarData.find(c => 
+          c.location.trim().toLowerCase() === (item.map || '').trim().toLowerCase() &&
+          c.fish.trim().toLowerCase() === (item.fish || '').trim().toLowerCase()
+        );
+        if (calMatch) {
+          return {
+            ...item,
+            activeTime: calMatch.activeTime,
+            status: calMatch.status,
+            maxPts: calMatch.maxPts
+          };
+        }
+        return item;
+      });
+    }
+
+    /* ---------------- DASHBOARD LOGIC ---------------- */
+    function initDashboardUI() {
+      if (masterFishData.length === 0) {
+        document.getElementById('mapGrid').innerHTML = '<div class="empty-state">No data in Master Data tab!</div>';
+        return;
+      }
+
+      const maps = [...new Set(masterFishData.map(item => item.map).filter(Boolean))];
+      const mapGrid = document.getElementById('mapGrid');
+      mapGrid.innerHTML = '';
+      
+      maps.forEach((mapName, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'select-btn' + (idx === 0 ? ' active' : '');
+        btn.innerText = mapName;
+        btn.onclick = () => selectMap(mapName, btn);
+        mapGrid.appendChild(btn);
+      });
+
+      if (maps.length > 0) selectMap(maps[0], mapGrid.children[0]);
+    }
+
+    function selectMap(mapName, btnElement) {
+      currentMap = mapName;
+
+      document.querySelectorAll('#mapGrid .select-btn').forEach(b => b.classList.remove('active'));
+      if(btnElement) btnElement.classList.add('active');
+
+      const variations = [...new Set(
+        masterFishData
+          .filter(i => (i.map || '').trim().toLowerCase() === (mapName || '').trim().toLowerCase())
+          .map(i => i.variation || 'Standard')
+      )];
+
+      const varGrid = document.getElementById('variationGrid');
+      varGrid.innerHTML = '';
+
+      variations.forEach((varName, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'select-btn variation-btn' + (idx === 0 ? ' active' : '');
+        btn.innerText = varName;
+        btn.onclick = () => selectVariation(varName, btn);
+        varGrid.appendChild(btn);
+      });
+
+      if (variations.length > 0) selectVariation(variations[0], varGrid.children[0]);
+    }
+
+    function selectVariation(varName, btnElement) {
+      currentVariation = varName;
+
+      document.querySelectorAll('#variationGrid .select-btn').forEach(b => b.classList.remove('active'));
+      if(btnElement) btnElement.classList.add('active');
+
+      renderDashboardData();
+    }
+
+    /* Filter ikan yang butuh perhatian khusus (Day only, Night only, atau Out of Season) */
+    function isNotable(fishItem) {
+      const status = (fishItem.status || '').toString().toLowerCase();
+      const activeTime = (fishItem.activeTime || '').toString().toLowerCase();
+      const isOut = status.includes('out');
+      const isDay = activeTime.includes('day only');
+      const isNight = activeTime.includes('night only');
+      return isOut || isDay || isNight;
+    }
+
+    function renderDashboardData() {
+      const enrichedMaster = getEnrichedMasterData();
+      const filtered = enrichedMaster.filter(item => 
+        (item.map || '').trim().toLowerCase() === (currentMap || '').trim().toLowerCase() &&
+        (item.variation || 'Standard').trim().toLowerCase() === (currentVariation || 'Standard').trim().toLowerCase()
+      );
+
+      const varBox = document.getElementById('variationFishBox');
+      const pillsContainer = document.getElementById('variationFishPills');
+      if (filtered.length > 0) {
+        varBox.style.display = 'flex';
+        pillsContainer.innerHTML = filtered.map(f => `<span class="fish-pill">${f.fish}</span>`).join('');
+      } else {
+        varBox.style.display = 'none';
+      }
+
+      const notableFish = filtered.filter(isNotable);
+      const listContainer = document.getElementById('fishList');
+      const badgeCount = document.getElementById('fishCountBadge');
+
+      if (notableFish.length === 0) {
+        badgeCount.className = 'badge badge-all';
+        badgeCount.innerText = 'ALL AVAILABLE';
+        listContainer.innerHTML = `
+          <div class="fish-item">
+            <div class="fish-name">All fish available in season & 24/7</div>
+            <div class="fish-badges">
+              <span class="badge badge-all">☀️🌙🗓️✅ All Clear</span>
+            </div>
+          </div>`;
+      } else {
+        badgeCount.className = 'badge badge-out';
+        badgeCount.innerText = notableFish.length + ' TARGETS';
+        
+        listContainer.innerHTML = notableFish.map(f => {
+          const status = (f.status || '').toString().toLowerCase();
+          const activeTime = (f.activeTime || '').toString().toLowerCase();
+
+          const isOut = status.includes('out');
+          const isDay = activeTime.includes('day only');
+          const isNight = activeTime.includes('night only');
+          const maxPtsTag = (isOut && f.maxPts) ? ` (${f.maxPts})` : '';
+
+          return `
+            <div class="fish-item">
+              <div class="fish-name">${f.fish || 'Unknown Fish'}</div>
+              <div class="fish-badges">
+                ${isDay ? '<span class="badge badge-time">☀️ Day Only</span>' : ''}
+                ${isNight ? '<span class="badge badge-time">🌙 Night Only</span>' : ''}
+                ${(!isDay && !isNight) ? '<span class="badge badge-time">☀️🌙 24/7</span>' : ''}
+                ${isOut ? `<span class="badge badge-out">🗓️ Out of Season${maxPtsTag}</span>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const mapLink = filtered.length > 0 ? (filtered[0].mapLink || '') : '';
+      generateDiscordText(notableFish, currentMap, mapLink);
+    }
+
+    /* GENERATE DISCORD ANNOUNCEMENT (RULES SANGAT KETAT) */
+    function generateDiscordText(notableFish, mapName, mapLink) {
+      let text = `:crossed_swords: **New Clan Battle** :crossed_swords:\n\n:map: ${mapName}\n\n`;
+
+      if (notableFish.length === 0) {
+        text += `☀️🌙🗓️✅ All fish in season & active 24/7\n\n`;
+      } else {
+        notableFish.forEach(f => {
+          const status = (f.status || '').toString().toLowerCase();
+          const activeTime = (f.activeTime || '').toString().toLowerCase();
+
+          const isOut = status.includes('out');
+          const isDay = activeTime.includes('day only');
+          const isNight = activeTime.includes('night only');
+
+          text += `${f.fish || 'Unknown Fish'}\n`;
+
+          // Baris waktu aktif HANYA dimunculkan jika khusus Day Only atau Night Only
+          if (isDay) {
+            text += `_Day Only_ :sunny:\n`;
+          } else if (isNight) {
+            text += `_Night Only_ :crescent_moon:\n`;
+          }
+
+          // Baris Out of Season
+          if (isOut) {
+            const ptsStr = f.maxPts ? ` (${f.maxPts})` : '';
+            text += `_Out of Season${ptsStr}_ :calendar_spiral:\n`;
+          }
+
+          text += `\n`;
+        });
+      }
+
+      if (mapLink) text += `${mapLink}`;
+
+      document.getElementById('discordText').innerText = text.trim();
+    }
+
+    /* ---------------- CALENDAR LOGIC ---------------- */
+    function getRarityBadgeClass(rarity) {
+      const r = (rarity || '').toString().toLowerCase();
+      if (r.includes('epic')) return 'badge-rarity-epic';
+      if (r.includes('rare')) return 'badge-rarity-rare';
+      return 'badge-rarity-common';
+    }
+
+    function initCalendarUI() {
+      if (calendarData.length === 0) return;
+
+      const locs = [...new Set(calendarData.map(item => item.location).filter(Boolean))];
+      const calMapGrid = document.getElementById('calendarMapGrid');
+      calMapGrid.innerHTML = '';
+
+      locs.forEach((locName, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'select-btn' + (idx === 0 ? ' active' : '');
+        btn.innerText = locName;
+        btn.onclick = () => selectCalendarLocation(locName, btn);
+        calMapGrid.appendChild(btn);
+      });
+
+      if (locs.length > 0) selectCalendarLocation(locs[0], calMapGrid.children[0]);
+    }
+
+    function selectCalendarLocation(locName, btnElement) {
+      currentCalendarLocation = locName;
+
+      document.querySelectorAll('#calendarMapGrid .select-btn').forEach(b => b.classList.remove('active'));
+      if(btnElement) btnElement.classList.add('active');
+
+      renderCalendarTable();
+    }
+
+    /* RENDER TABEL KALENDER: HANYA EMOJI WAKTU AKTIF & MUSIM TANPA PTS */
+    function renderCalendarTable() {
+      const filtered = calendarData.filter(item => 
+        (item.location || '').trim().toLowerCase() === (currentCalendarLocation || '').trim().toLowerCase()
+      );
+
+      const tbody = document.getElementById('calendarTableBody');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td class="empty-state">No fish records for this location.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((item, idx) => {
+        const activeTimeStr = (item.activeTime || '').toLowerCase();
+        let timeIcon = '☀️🌙';
+        if (activeTimeStr.includes('day only')) timeIcon = '☀️';
+        else if (activeTimeStr.includes('night only')) timeIcon = '🌙';
+
+        const isOut = (item.status || '').toLowerCase().includes('out');
+        const statusBadge = isOut ? 
+          '<span class="badge badge-season-out">out of season</span>' : 
+          '<span class="badge badge-season-in">in season</span>';
+
+        const rarityClass = getRarityBadgeClass(item.rarity);
+
+        return `
+          <tr>
+            <td style="width: 40%;">
+              <div class="cal-cell-primary">
+                <span class="cal-fish-name">${item.fish}</span>
+                <span class="badge ${rarityClass}" style="width: fit-content;">${item.rarity}</span>
+              </div>
+            </td>
+
+            <td style="width: 35%;">
+              <div class="cal-cell-status">
+                <div>${statusBadge}</div>
+                <div class="time-icons">${timeIcon}</div>
+              </div>
+            </td>
+
+            <td style="width: 25%; text-align: right;">
+              <button class="btn-months-pop" onclick="openMonthsModal(${idx})">Edit Time & Months</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    /* ---------------- EDIT MODAL POP-UP LOGIC ---------------- */
+    function openMonthsModal(filteredIdx) {
+      const filtered = calendarData.filter(item => 
+        (item.location || '').trim().toLowerCase() === (currentCalendarLocation || '').trim().toLowerCase()
+      );
+
+      selectedCalendarFishObject = filtered[filteredIdx];
+      if (!selectedCalendarFishObject) return;
+
+      document.getElementById('monthsModalTitle').innerText = 'Edit - ' + selectedCalendarFishObject.fish;
+
+      // Inisialisasi status Day / Night
+      const at = (selectedCalendarFishObject.activeTime || '').toLowerCase();
+      tempDayState = at.includes('day only') || at.includes('day & night') || at.includes('24/7') || !at;
+      tempNightState = at.includes('night only') || at.includes('day & night') || at.includes('24/7') || !at;
+
+      // Inisialisasi Active Months
+      tempMonthStates = [...(selectedCalendarFishObject.months || Array(12).fill(false))];
+      isEditingMonths = false;
+
+      renderTimeChips();
+      renderMonthChips();
+
+      document.getElementById('saveMonthsBtn').style.display = 'none';
+      document.getElementById('btnToggleMonthEdit').classList.remove('active');
+
+      document.getElementById('monthsModal').style.display = 'flex';
+    }
+
+    /* Render Active Time Chips (Day / Night) */
+    function renderTimeChips() {
+      const grid = document.getElementById('timeChipsGrid');
+      const dayClass = tempDayState ? 'active' : 'inactive';
+      const nightClass = tempNightState ? 'active' : 'inactive';
+      const editClass = isEditingMonths ? 'editable' : '';
+
+      grid.innerHTML = `
+        <div class="time-chip ${dayClass} ${editClass}" onclick="toggleTimeChip('day')">
+          <span>Day ☀️</span>
+          <span style="font-size:10px;">${tempDayState ? '✓' : '•'}</span>
+        </div>
+        <div class="time-chip ${nightClass} ${editClass}" onclick="toggleTimeChip('night')">
+          <span>Night 🌙</span>
+          <span style="font-size:10px;">${tempNightState ? '✓' : '•'}</span>
+        </div>
+      `;
+    }
+
+    function toggleTimeChip(type) {
+      if (!isEditingMonths) return;
+      if (type === 'day') {
+        if (tempDayState && !tempNightState) return; 
+        tempDayState = !tempDayState;
+      } else if (type === 'night') {
+        if (tempNightState && !tempDayState) return; 
+        tempNightState = !tempNightState;
+      }
+      renderTimeChips();
+    }
+
+    function renderMonthChips() {
+      const grid = document.getElementById('monthsGrid');
+      grid.innerHTML = MONTH_NAMES.map((mName, i) => {
+        const isActive = tempMonthStates[i] === true;
+        const activeClass = isActive ? 'active' : 'inactive';
+        const editClass = isEditingMonths ? 'editable' : '';
+        const checkMark = isActive ? '✓' : '•';
+
+        return `
+          <div class="month-chip ${activeClass} ${editClass}" onclick="toggleMonthChip(${i})">
+            <span>${mName}</span>
+            <span style="font-size:10px;">${checkMark}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleMonthChip(index) {
+      if (!isEditingMonths) return; 
+      tempMonthStates[index] = !tempMonthStates[index];
+      renderMonthChips();
+    }
+
+    function getFormattedActiveTime() {
+      if (tempDayState && tempNightState) return "Day & Night";
+      if (tempDayState && !tempNightState) return "Day Only";
+      if (!tempDayState && tempNightState) return "Night Only";
+      return "Day & Night";
+    }
+
+    function enableMonthEditing() {
+      isEditingMonths = true;
+      renderTimeChips();
+      renderMonthChips();
+      document.getElementById('saveMonthsBtn').style.display = 'block';
+      document.getElementById('btnToggleMonthEdit').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+      selectedCalendarFishObject = null;
+    }
+
+    function saveMonthsEdit() {
+      if (!selectedCalendarFishObject) return;
+
+      const currentMonthIndex = new Date().getMonth(); 
+      const isCurrentActive = tempMonthStates[currentMonthIndex];
+      const newStatus = isCurrentActive ? 'In Season' : 'Out of Season';
+      const newActiveTime = getFormattedActiveTime();
+
+      const payload = {
+        location: selectedCalendarFishObject.location,
+        fish: selectedCalendarFishObject.fish,
+        activeTime: newActiveTime,
+        months: tempMonthStates,
+        status: newStatus
+      };
+
+      const btn = document.getElementById('saveMonthsBtn');
+      btn.innerText = 'Saving...'; btn.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(res => {
+          btn.innerText = 'Save to Sheet'; btn.disabled = false;
+          if (res.success) {
+            selectedCalendarFishObject.activeTime = newActiveTime;
+            selectedCalendarFishObject.months = [...tempMonthStates];
+            selectedCalendarFishObject.status = newStatus;
+
+            closeModal('monthsModal');
+            renderCalendarTable();
+            renderDashboardData(); 
+          } else {
+            alert(res.message);
+          }
+        })
+        .withFailureHandler(err => {
+          btn.innerText = 'Save to Sheet'; btn.disabled = false;
+          alert("Save Failed: " + err.message);
+        })
+        .updateFishCalendarMonths(payload);
+    }
+
+    function copyDiscordAnnouncement() {
+      const text = document.getElementById('discordText').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<span>✅</span> Copied!';
+        btn.style.background = 'linear-gradient(135deg, #2ec4b6, #20948b)';
+
+        setTimeout(() => {
+          btn.innerHTML = origText;
+          btn.style.background = 'linear-gradient(135deg, var(--discord-purple), #404eed)';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
