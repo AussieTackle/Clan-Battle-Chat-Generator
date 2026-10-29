@@ -554,10 +554,10 @@
     }
 
     function generateDiscordText(notableFish, mapName, mapLink) {
-      let text = `:crossed_swords: **New Clan Battle** :crossed_swords:\n\n:map: ${mapName}\n\n`;
+      let text = `**New Clan Battle**\n\n:map: ${mapName}\n\n`;
 
       if (notableFish.length === 0) {
-        text += `☀️🌙🗓️✅ All fish in season & active 24/7\n\n`;
+        text += `All fish in season & active day and night.\n\n`;
       } else {
         notableFish.forEach(f => {
           const status = (f.status || '').toString().toLowerCase();
