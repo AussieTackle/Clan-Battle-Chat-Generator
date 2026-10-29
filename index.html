@@ -207,7 +207,7 @@
     .btn-save { background: var(--clan-accent); color: #ffffff; border: none; padding: 10px 14px; border-radius: 8px; font-weight: 700; flex: 1; cursor: pointer; }
     .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: #334155; padding: 10px 14px; border-radius: 8px; font-weight: 700; flex: 1; cursor: pointer; }
 
-    /* KHUSUS TAMPILAN HP (MAX-WIDTH: 600px): BADGES DITUMPUK 2 BARIS */
+    /* KHUSUS TAMPILAN HP (MAX-WIDTH: 600px) */
     @media (max-width: 600px) {
       body { padding: 12px 10px 30px; }
       .card { padding: 16px; }
@@ -224,9 +224,11 @@
       .time-icons { font-size: 14px; }
       .btn-months-pop { padding: 6px 8px; font-size: 10px; }
 
-      /* Mengatur fish-item dan fish-badges agar badge bertumpuk secara vertikal (satu di atas yang lain) */
-      .fish-item { flex-direction: column; align-items: flex-start; gap: 8px; }
-      .fish-badges { width: 100%; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+      /* Penataan Layout HP: 1 keterangan jadi 1 baris, 2 keterangan jadi 2 baris vertikal rapi di kanan */
+      .fish-item { align-items: center; }
+      .fish-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+      /* Jika hanya ada 1 badge/keterangan, buat sejajar/center secara vertikal dengan nama ikan */
+      .fish-badges:not(:has(:nth-child(2))) { flex-direction: row; align-items: center; }
     }
   </style>
 </head>
