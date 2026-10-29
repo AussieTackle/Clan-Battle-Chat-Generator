@@ -100,7 +100,20 @@
       background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px;
       padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
     }
-    .card-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; color: #0f172a; }
+    .card-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; color: #0f172a; }
+
+    /* Format Selector Buttons */
+    .format-buttons { display: flex; gap: 6px; margin-bottom: 14px; }
+    .format-btn {
+      background: #f1f5f9; border: 1px solid var(--border-color); color: #334155;
+      padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; flex: 1; text-align: center;
+    }
+    .format-btn:hover { background: #e2e8f0; }
+    .format-btn.active {
+      background: var(--clan-accent); color: #ffffff; border-color: var(--clan-accent);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
 
     /* Fish List */
     .fish-list { display: flex; flex-direction: column; gap: 10px; }
@@ -227,7 +240,6 @@
       /* Penataan Layout HP: 1 keterangan jadi 1 baris, 2 keterangan jadi 2 baris vertikal rapi di kanan */
       .fish-item { align-items: center; }
       .fish-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-      /* Jika hanya ada 1 badge/keterangan, buat sejajar/center secara vertikal dengan nama ikan */
       .fish-badges:not(:has(:nth-child(2))) { flex-direction: row; align-items: center; }
     }
   </style>
@@ -291,6 +303,12 @@
         <div class="card">
           <div class="card-title">
             <span>Discord Format Announcement</span>
+          </div>
+          <!-- Format Selector Buttons -->
+          <div class="format-buttons">
+            <button class="format-btn active" id="fmtBtn1" onclick="setDiscordFormat(1)">Format 1</button>
+            <button class="format-btn" id="fmtBtn2" onclick="setDiscordFormat(2)">Format 2</button>
+            <button class="format-btn" id="fmtBtn3" onclick="setDiscordFormat(3)">Format 3</button>
           </div>
           <div class="discord-box" id="discordText">Select a map location to generate announcement...</div>
           <button class="copy-btn" id="copyBtn" onclick="copyDiscordAnnouncement()">
@@ -363,6 +381,7 @@
     let tempDayState = true;
     let tempNightState = true;
     let isEditingMonths = false;
+    let currentDiscordFormat = 1;
 
     window.onload = function() {
       // Listener tombol back perangkat
@@ -376,6 +395,13 @@
 
       fetchData();
     };
+
+    function setDiscordFormat(fmt) {
+      currentDiscordFormat = fmt;
+      document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('fmtBtn' + fmt).classList.add('active');
+      renderDashboardData();
+    }
 
     function fetchData() {
       fetch(API_URL)
@@ -560,37 +586,84 @@
     }
 
     function generateDiscordText(notableFish, mapName, mapLink) {
-      let text = `**New Clan Battle**\n\n:map: ${mapName}\n\n`;
+      let text = '';
 
-      if (notableFish.length === 0) {
-        text += `All fish in season & active day and night.\n\n`;
-      } else {
-        notableFish.forEach(f => {
-          const status = (f.status || '').toString().toLowerCase();
-          const activeTime = (f.activeTime || '').toString().toLowerCase();
+      if (currentDiscordFormat === 1) {
+        text = `**New Clan Battle**\n\n:map: ${mapName}\n\n`;
+        if (notableFish.length === 0) {
+          text += `All fish in season & active day and night.\n\n`;
+        } else {
+          notableFish.forEach(f => {
+            const status = (f.status || '').toString().toLowerCase();
+            const activeTime = (f.activeTime || '').toString().toLowerCase();
+            const isOut = status.includes('out');
+            const isDay = activeTime.includes('day only');
+            const isNight = activeTime.includes('night only');
 
-          const isOut = status.includes('out');
-          const isDay = activeTime.includes('day only');
-          const isNight = activeTime.includes('night only');
+            text += `${f.fish || 'Unknown Fish'}\n`;
+            if (isDay) {
+              text += `_Day Only_ :sunny:\n`;
+            } else if (isNight) {
+              text += `_Night Only_ :crescent_moon:\n`;
+            }
+            if (isOut) {
+              const ptsStr = f.maxPts ? ` (${f.maxPts})` : '';
+              text += `_Out of Season${ptsStr}_ :calendar_spiral:\n`;
+            }
+            text += `\n`;
+          });
+        }
+      } else if (currentDiscordFormat === 2) {
+        text = `**New Clan Battle**\n\n${mapName}\n\n`;
+        if (notableFish.length === 0) {
+          text += `All fish in season & active day and night.\n\n`;
+        } else {
+          notableFish.forEach(f => {
+            const status = (f.status || '').toString().toLowerCase();
+            const activeTime = (f.activeTime || '').toString().toLowerCase();
+            const isOut = status.includes('out');
+            const isDay = activeTime.includes('day only');
+            const isNight = activeTime.includes('night only');
 
-          text += `${f.fish || 'Unknown Fish'}\n`;
+            text += `‼️ ${f.fish || 'Unknown Fish'}`;
+            if (isDay) text += ` - Day Only`;
+            if (isNight) text += ` - Night Only`;
+            text += `\n`;
+            if (isOut) {
+              const ptsStr = f.maxPts ? ` (${f.maxPts})` : '';
+              text += `Out of Season${ptsStr}\n`;
+            }
+            text += `\n`;
+          });
+        }
+      } else if (currentDiscordFormat === 3) {
+        text = `**New Clan Battle**\n\n${mapName}\n\n`;
+        if (notableFish.length === 0) {
+          text += `All fish in season & active day and night.\n\n`;
+        } else {
+          notableFish.forEach(f => {
+            const status = (f.status || '').toString().toLowerCase();
+            const activeTime = (f.activeTime || '').toString().toLowerCase();
+            const isOut = status.includes('out');
+            const isDay = activeTime.includes('day only');
+            const isNight = activeTime.includes('night only');
 
-          if (isDay) {
-            text += `_Day Only_ :sunny:\n`;
-          } else if (isNight) {
-            text += `_Night Only_ :crescent_moon:\n`;
-          }
-
-          if (isOut) {
-            const ptsStr = f.maxPts ? ` (${f.maxPts})` : '';
-            text += `_Out of Season${ptsStr}_ :calendar_spiral:\n`;
-          }
-
-          text += `\n`;
-        });
+            text += `${f.fish || 'Unknown Fish'}`;
+            if (isDay) text += ` - Day Only`;
+            if (isNight) text += ` - Night Only`;
+            text += `\n`;
+            if (isOut) {
+              const ptsStr = f.maxPts ? ` (${f.maxPts})` : '';
+              text += `Out of Season${ptsStr}\n`;
+            }
+            text += `\n`;
+          });
+        }
       }
 
-      if (mapLink) text += `${mapLink}`;
+      if (mapLink) {
+        text += `-# ${mapLink}`;
+      }
 
       document.getElementById('discordText').innerText = text.trim();
     }
